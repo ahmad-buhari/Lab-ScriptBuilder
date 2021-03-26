@@ -81,25 +81,31 @@ $newBaseOU = Read-Host "Enter Base Name"
     #New OrganizationalUnit Computer
     New-ADOrganizationalUnit `
     -Name $newBaseOU-Computers `
-    -Path "OU=$domain,DC=AREA52,DC=LAB" `
+    -Path "OU=$newBaseOU,DC=$domain,DC=LAB" `
 
     -ProtectedFromAccidentalDeletion $false
 
     #New OrganizationalUnit Users
     New-ADOrganizationalUnit `
     -Name $newBaseOU-Users `
-    -Path "OU=$domain,DC=AREA52,DC=LAB" `
+    -Path "OU=$newBaseOU,DC=$domain,DC=LAB" `
     -ProtectedFromAccidentalDeletion $false
 
 
 #Creating Lab Users, Compuers
-$fetch = Get-Content '.\Desktop\computer list.csv'
 
+#Define spreadsheet
+$ComputerList = Read-Host "Enter File Info"
+
+#Pulled Info into variable
+$fetch = Get-Content "$ComputerList"
+
+#Transfer variable into array
 $comps = @($fetch)
 
 
 #Add Comptuer Objects
-foreach ($computer in $comps) {New-ADComputer -Name $computer -Path "OU= M-Computers,OU=Mildenhall,DC=AREA52,DC=LAB" }
+foreach ($computer in $comps) {New-ADComputer -Name $computer -Path "OU= M-Computers,OU=$base,DC=$domain,DC=LAB" }
 
 
 #Remove Objects

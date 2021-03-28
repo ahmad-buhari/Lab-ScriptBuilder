@@ -10,11 +10,11 @@ Ideal for quick tesing (patches, software, etc) on fresh Windows Server virtual 
 
 ## Remaining Tasks
 ![Tasks](https://img.shields.io/badge/To%20Do%20List-2/5-yellow)
--[x] Create Script Base
--[x] Create README
--[] Add User(s) Creation
--[] Add Cleanup Task
--[] Add Certificate Authority Build
+- [x] Create Script Base
+- [x] Create README
+- [] Add User(s) Creation
+- [] Add Cleanup Task
+- [] Add Certificate Authority Build
 
 
 

@@ -1,5 +1,5 @@
 # PS Script
 ## Loop base PowerShell script for building lab environment
-![PowershellLogo](https://www.powershellgallery.com/Content/Images/Branding/psgallerylogo.svg)
-![Version](https://img.shields.io/badge/-PowerShellv.5.1-blue)
+![Version](https://img.shields.io/badge/PowerShell-v5.1-blue)
+![Stable](https://img.shields.io/badge/Stable-working-green)
 

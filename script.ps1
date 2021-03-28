@@ -3,6 +3,7 @@
 
 ##Menu Selection        
 $TitleInfo = "PowerShell Lab Builder"
+$quit = "`nPress X or Ctrl+C to quit"
 $CommandMenu = " `nSelect the following options:
 `nPress 1 - Configure Machine Info
 `nPress 2 - Update Server and HelpMenu (*must run PowerShell as administrator)
@@ -12,11 +13,12 @@ $CommandMenu = " `nSelect the following options:
 "
 
 
-
+Clear-Host
 #Looping statement until var $selection ends
 do {
         
-    $selection = Read-Host -Prompt "`n$TitleInfo `n`n $CommandMenu"
+    
+    $selection = Read-Host -Prompt "`n$TitleInfo `n$quit `n`n $CommandMenu"
    
                 
     # Iterating through loop
@@ -192,24 +194,21 @@ do {
 
 
     #Error Statement
-    catch {
-        [System.OutOfMemoryException]
-                        
+    catch {                
         Write-Host 'Restart Powershell script' -ForegroundColor Red; 
-    
     }
     #Error Statement 2
-    if ($selection -gt 10) { Write-Host "`n Please Choose Options" -ForegroundColor Red }
+    if ($selection -igt "5" -and -not "X") { Write-Host "`nTry Again" -ForegroundColor Red }
                     
         
         
-    #Loop Limit            `
-} until ($selection -eq 4)
+    #Loop Limit (case insenstive)          
+} until ($selection -contains "X")
 
 
 
 #Remove Objects
-foreach ($computer in $comps) { Remove-ADComputer -Identity $computer -Confirm:$false }
+#foreach ($computer in $comps) { Remove-ADComputer -Identity $computer -Confirm:$false }
 
 
 

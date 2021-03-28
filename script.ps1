@@ -1,81 +1,185 @@
-#Function: Customize Windows Server Lab
+#Script: Customize Windows Server Lab
 #Drafting initial lab prep workflow
 
-
-#Defining Custom Function 
-## Reference from https://docs.microsoft.com/en-us/powershell/scripting/learn/ps101/09-functions?view=powershell-7.1
-function Build-Lab {
-
-
-    #Assiging Parameters for function
-    ##Add additional param with , (comma) 
-    param ([string]$Title = '')
-
-    #Clears screen when function start
-    Clear-Host
-
-    #Outpput Menu Title & Menu Selection
-    Write-Host "---$Title---" -ForegroundColor Yellow
-
-}
-
-#Variables for Menu        
+##Menu Selection        
 $TitleInfo = "PowerShell Lab Builder"
 $CommandMenu = " `nSelect the following options:
 `nPress 1 - Configure Machine Info
-`nPress 2 - Configure Domain Server & Active Directory
+`nPress 2 - Update Server and HelpMenu (*must run PowerShell as administrator)
+`nPress 3 - Create New Lab Domain and Active Directory
+`nPress 4 - Create new Top Level OU, e.g new Base name with additional OU for computers and users
+`nPress 5 - Create New Computer(s) 
 "
 
-PowerShell-Menu -Title "$TitleInfo"
+
 
 #Looping statement until var $selection ends
 do {
         
-    $selection = Read-Host -Prompt "`n $CommandMenu"
+    $selection = Read-Host -Prompt "`n$TitleInfo `n`n $CommandMenu"
    
                 
     # Iterating through loop
-    Try { 
+    Try {
+        1
         switch ([int]$selection) {
 
             '1' {
+                
+                #Clearing Terminal
+                Clear-Host
 
                 #Phase 1 Prepping Server 
-
-                #Getting Server Details
+                ##Getting Server Details
                 $name = Read-Host -Prompt "`nNew Machine Name"
                 $ipNew = Read-Host "`nEnter new IPaddress" ;
                 $gateNew = Read-Host "`nEnter new subnet" ;
-                $ipdns = Read-Host -Prompt "`nEnter DNS IPaddress"
+                $dnsNew = Read-Host -Prompt "`nEnter DNS IPaddress"
 
-                #Verfiy
-                Write-Host "`New Machine name $name with IPaddress of $ipNew, gateway $gateNew, and DNS IP of $dns" -ForegroundColor Yellow
+                #Verfiy Selection
+                Write-Host "`New Machine name $name with IPaddress of $ipNew, gateway $gateNew, and DNS IP of $dnsNew" -ForegroundColor Yellow
                 $response = Read-Host -Prompt "`nProceed with config Y or N"
                 if (($response -match "Y") -or ($response -match "YES")) {
 
                     #Rename Machine
-                    Rename-Computer -NewName $name -WarningAction SilentlyContinue
                     Write-Host "`nRenaming Computer" -ForegroundColor Yellow
+                    Rename-Computer -NewName $name -WarningAction SilentlyContinue
+                    
 
                     #Configure Network 
-
+                    Write-Host "`nConfiguring Network" -ForegroundColor Yellow
                     $netConfigure = New-NetIPAddress -InterfaceIndex $ip.InterfaceIndex -IPAddress $ipNew -PrefixLength 24 -DefaultGateway $gateNew ;
                     $netConfigure
-                    Write-Host "`nConfiguring Network" -ForegroundColor Yellow
-
-                    #Setup DNS
-                                            
+                    #Setup DNS          
                     $dns = Set-DnsClientServerAddress -InterfaceIndex $ip.InterfaceIndex -ServerAddresses $ipdns, "8.8.8.8"
                     $dns
-                                            
-                                            
                 }
 
                 else {
-                    Write-host "`nPlease restart" -ForegroundColor DarkMagenta
-
-                                                                                                    
+                    Clear-Host
+                    Write-host "`nRestarting" -ForegroundColor Red
                 }
+            }
+
+            '2' {
+
+                #Clearing Terminal
+                Clear-Host
+                
+                #Step2
+                #Installing Windows Update PSModule
+                Write-Host "`nInstalling PSWindowUpdateModule" -ForegroundColor Yellow
+                $installerA = Install-Module -Name PSWindowsUpdate -Scope CurrentUser -Verbose -WarningAction SilentlyContinue
+                $installerA
+                #Installing Updates for Windows
+                $updateB = Install-WindowsUpdate -AcceptAll -IgnoreReboot
+                $updateB
+                #Step2
+                #Update PowerShell Help
+                Write-Host "`nUpdating Powershell Help" -ForegroundColor Yellow
+                $updateHelp = Update-Help -Force -ErrorAction Ignore
+                $updateHelp
+            }
+
+            '3' {
+                
+                #Clearing Terminal
+                Clear-Host
+
+                #PrepInfo
+                Write-Host "`nConfiguring New Doman" -ForegroundColor Yellow
+                $domain = Read-Host -Prompt "`nEnter Domain Name (no spaces)" 
+                
+                #Install AD Services
+                $ADprep = Install-WindowsFeature –Name AD-Domain-Services -IncludeManagementTools
+                $ADprep
+
+                #Configure AD Specifics
+                $ADprep2 = Install-ADDSForest `
+                    -DomainName "$domain.LAB" `
+                    -CreateDnsDelegation:$false `
+                    -DatabasePath "C:\Windows\NTDS" `
+                    -DomainMode "7" `
+                    -DomainNetbiosName $domain `
+                    -ForestMode "7" `
+                    -InstallDns:$true `
+                    -LogPath "C:\Windows\NTDS" `
+                    -NoRebootOnCompletion:$true `
+                    -SysvolPath "C:\Windows\SYSVOL" `
+                    -Force:$true
+                $ADprep2
+                Write-Host "`n***Restarting machine for update, cancel within 10 secs***" -ForegroundColor Red
+                Wait-Event -timeout 10
+                Restart-Computer
+            }
+
+            '4' {
+
+                #Clearing Terminal
+                Clear-Host
+
+                #Creating Top Level OU
+                $newBaseOU = Read-Host "Enter Base Name"
+                Write-Host "`nCreating Top Level OU" -ForegroundColor Yellow
+                
+                #New OrganizationalUnit Base
+                New-ADOrganizationalUnit `
+                    -Name $newBaseOU `
+                    -Path "DC=$domain,DC=LAB" `
+                    -ProtectedFromAccidentalDeletion $false
+
+                #New OrganizationalUnit Computer
+                New-ADOrganizationalUnit `
+                    -Name $newBaseOU-Computers `
+                    -Path "OU=$newBaseOU,DC=$domain,DC=LAB" `
+                    -ProtectedFromAccidentalDeletion $false
+
+                #New OrganizationalUnit Users
+                New-ADOrganizationalUnit `
+                    -Name $newBaseOU-Users `
+                    -Path "OU=$newBaseOU,DC=$domain,DC=LAB" `
+                    -ProtectedFromAccidentalDeletion $false
+            }
+
+            '5' {
+
+                #Clearing Terminal
+                Clear-Host
+
+                #Creating Compuers
+                ##Define spreadsheet
+                $ComputerCreationType = Read-Host -Prompt "`nPress 1 to create single computer `nPress 2 to create computer from list"
+                
+                #Defining Choice
+                if ($ComputerCreationType -eq 1 ) { 
+                    
+                    $ComputerCreateSingle = Read-Host -Prompt "`nEnter new Computer Name"
+                    $ComputerCreateSingle2 = New-ADComputer -Name $ComputerCreateSingle -Path "OU=$newBaseOU-Computers,OU=$newBaseOU,DC=$domain,DC=LAB"
+                    $ComputerCreateSingle2    
+                }
+
+                if ($ComputerCreationType -eq 2) { 
+
+                    $ComputerList = Read-Host "Enter File Info, enter absolut path to file (csv or txt extensions only)"
+
+                    #Pulled Info into variable
+                    $fetch = Get-Content "$ComputerList"
+    
+                    #Transfer variable into array
+                    $comps = @($fetch)
+    
+                    #Add Comptuer Objects
+                    foreach ($computer in $comps) { New-ADComputer -Name $computer -Path "OU=$newBaseOU-Computers,OU=$newBaseOU,DC=$domain,DC=LAB"}
+                    
+                }
+
+                else {
+
+                    Clear-Host
+                    Write-host "`nRestarting" -ForegroundColor Red
+                    
+                }
+
 
 
 
@@ -99,98 +203,9 @@ do {
                     
         
         
-    #Loop Limit            
-} until ($selection -eq 10)
+    #Loop Limit            `
+} until ($selection -eq 4)
 
-
-
-
-#Get-IPaddress
-Write-host "`nLooking IPaddress"
-$ip = Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias Ethernet0
-Write-Host "`nIPaddress is" $ip.IPAddress "on interface" $ip.InterfaceIndex -ForegroundColor Yellow
-
-
-#Step2
-#Update PowerShell Help
-Write-Host "`nUpdating Powershell Help" -ForegroundColor Yellow
-$updateHelp = Update-Help -Force 
-$updateHelp
-
-#Step3
-#Installing Windows Update PSModule
-Write-Host "`nInstalling PSWindowUpdateModule" -ForegroundColor Yellow
-$installerA = Install-Module -Name PSWindowsUpdate -Verbose -WarningAction SilentlyContinue
-$installerA
-
-#Step4
-#Installing Updates for Windows
-$updateB = Install-WindowsUpdate -AcceptAll -IgnoreReboot
-$updateB
-
-
-
-
-#Install AD Services
-Write-host "Installing AD Feature"
-$ADprep = Install-WindowsFeature –Name AD-Domain-Services -IncludeManagementTools
-$ADprep
-
-#Configure AD Specifics
-$domain = Read-Host -Prompt "Enter Domain Name"
-$ADprep2 = Install-ADDSForest `
-    -DomainName "$domain.LAB" `
-    -CreateDnsDelegation:$false `
-    -DatabasePath "C:\Windows\NTDS" `
-    -DomainMode "7" `
-    -DomainNetbiosName $domain `
-    -ForestMode "7" `
-    -InstallDns:$true `
-    -LogPath "C:\Windows\NTDS" `
-    -NoRebootOnCompletion:$true `
-    -SysvolPath "C:\Windows\SYSVOL" `
-    -Force:$true
-$ADprep2
-
-
-#AD Base Prep
-
-$newBaseOU = Read-Host "Enter Base Name"
-
-#New OrganizationalUnit Base
-New-ADOrganizationalUnit `
-    -Name $newBaseOU `
-    -Path "DC=$domain,DC=LAB" `
-    -ProtectedFromAccidentalDeletion $false
-
-#New OrganizationalUnit Computer
-New-ADOrganizationalUnit `
-    -Name $newBaseOU-Computers `
-    -Path "OU=$newBaseOU,DC=$domain,DC=LAB" `
-
--ProtectedFromAccidentalDeletion $false
-
-#New OrganizationalUnit Users
-New-ADOrganizationalUnit `
-    -Name $newBaseOU-Users `
-    -Path "OU=$newBaseOU,DC=$domain,DC=LAB" `
-    -ProtectedFromAccidentalDeletion $false
-
-
-#Creating Lab Users, Compuers
-
-#Define spreadsheet
-$ComputerList = Read-Host "Enter File Info"
-
-#Pulled Info into variable
-$fetch = Get-Content "$ComputerList"
-
-#Transfer variable into array
-$comps = @($fetch)
-
-
-#Add Comptuer Objects
-foreach ($computer in $comps) { New-ADComputer -Name $computer -Path "OU= M-Computers,OU=$base,DC=$domain,DC=LAB" }
 
 
 #Remove Objects

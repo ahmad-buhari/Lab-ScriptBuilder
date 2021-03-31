@@ -10,6 +10,7 @@ $CommandMenu = " `nSelect the following options:
 `nPress 3 - Create New Lab Domain and Active Directory
 `nPress 4 - Create new Top Level OU, e.g new Base name with additional OU for computers and users
 `nPress 5 - Create New Computer(s) 
+`nPress 6 - To compress (zip) file 
 "
 
 
@@ -171,7 +172,7 @@ do {
                     $comps = @($fetch)
     
                     #Add Comptuer Objects
-                    foreach ($computer in $comps) { New-ADComputer -Name $computer -Path "OU=$newBaseOU-Computers,OU=$newBaseOU,DC=$domain,DC=LAB"}
+                    foreach ($computer in $comps) { New-ADComputer -Name $computer -Path "OU=$newBaseOU-Computers,OU=$newBaseOU,DC=$domain,DC=LAB" }
                     
                 }
 
@@ -182,8 +183,28 @@ do {
                     
                 }
 
+            }
 
+            '6' {
 
+                Clear-Host
+                $dir = Get-Location
+                $FileLocation = Read-Host -prompt "`nEnter Full/Absolute Path to file, $dir"
+                $NewFileLocation = Read-Host -Prompt "`nEnter Full/Absolute Path to new compressed file location"
+                $CompressLevel = Read-Host -Prompt "`nChoose compression leve of new file. `nPress 1 for Fastest `nPress 2 for Optimal `nPress 3 for No Compresion"
+
+                if ($CompressLevel -eq 1) { $CompressLevelChoice = "Fastest" }
+                if ($CompressLevel -eq 2) { $CompressLevelChoice = "Optimal" }
+                if ($CompressLevel -eq 3) { $CompressLevelChoice = "No Compression" }
+
+                #Valdatiation
+                Write-Host "`nCompressing file from `n$dir\$FileLocation to $dir\$NewFileLocation `nwith compression type $CompressLevel" -ForegroundColor Yellow
+                $validate = Read-Host -Prompt "`nProcced with compression Y or N?"
+
+                if ($validate -match "Yes" -or "y") { Compress-Archive -Path "$dir\$FileLocation" -DestinationPath "$dir\$NewFileLocation.zip" -CompressionLevel "$CompressLevelChoice" }
+                if ($validate -match "No" -or "n") { Write-Host "Canceling" -ForegroundColor Red }
+
+                else { Write-Host "Canceling" -ForegroundColor Red }
 
 
             }

@@ -4,13 +4,16 @@
 ##Menu Selection        
 $TitleInfo = "PowerShell Lab Builder"
 $quit = "`nPress X or Ctrl+C to quit"
-$CommandMenu = " `nSelect the following options:
+$CommandMenu = 
+"
+`nSelect the following options:
 `nPress 1 - Configure Machine Info
 `nPress 2 - Update Server and HelpMenu (*must run PowerShell as administrator)
 `nPress 3 - Create New Lab Domain and Active Directory
 `nPress 4 - Create new Top Level OU, e.g new Base name with additional OU for computers and users
 `nPress 5 - Create New Computer(s) 
 `nPress 6 - To compress (zip) file 
+`n
 "
 
 
@@ -18,14 +21,9 @@ Clear-Host
 #Looping statement until var $selection ends
 do {
         
-    
     $selection = Read-Host -Prompt "`n$TitleInfo `n$quit `n`n $CommandMenu"
-   
-                
-    # Iterating through loop
-    Try {
-        1
-        switch ([int]$selection) {
+        
+        switch ($selection) {
 
             '1' {
                 
@@ -40,7 +38,7 @@ do {
                 $dnsNew = Read-Host -Prompt "`nEnter DNS IPaddress"
 
                 #Verfiy Selection
-                Write-Host "`New Machine name $name with IPaddress of $ipNew, gateway $gateNew, and DNS IP of $dnsNew" -ForegroundColor Yellow
+                Write-Host "`nNew Machine name $name with IPaddress of $ipNew, gateway $gateNew, and DNS IP $dnsNew" -ForegroundColor Yellow
                 $response = Read-Host -Prompt "`nProceed with config Y or N"
                 if (($response -match "Y") -or ($response -match "YES")) {
 
@@ -51,11 +49,17 @@ do {
 
                     #Configure Network 
                     Write-Host "`nConfiguring Network" -ForegroundColor Yellow
-                    $netConfigure = New-NetIPAddress -InterfaceIndex $ip.InterfaceIndex -IPAddress $ipNew -PrefixLength 24 -DefaultGateway $gateNew ;
+                    $netConfigure = New-NetIPAddress -InterfaceIndex Ethernet0 -IPAddress $ipNew -PrefixLength 24 -DefaultGateway $gateNew ;
                     $netConfigure
                     #Setup DNS          
-                    $dns = Set-DnsClientServerAddress -InterfaceIndex $ip.InterfaceIndex -ServerAddresses $ipdns, "8.8.8.8"
+                    $dns = Set-DnsClientServerAddress -InterfaceIndex Ethernet0 -ServerAddresses $ipdns
                     $dns
+
+                    $netcheck = Get-NetIPAddress -AddressFamily IPv4 -PrefixOrigin manual
+                    $netcheck
+
+                    Write-Host "Final config $netcheck" -ForegroundColor Yellow
+                    Write-Host "Restarting computer.."
                 }
 
                 else {
@@ -211,20 +215,8 @@ do {
         
         }
 
-    }
-
-
-    #Error Statement
-    catch {                
-        Write-Host 'Restart Powershell script' -ForegroundColor Red; 
-    }
-    #Error Statement 2
-    if ($selection -igt "5" -and -not "X") { Write-Host "`nTry Again" -ForegroundColor Red }
-                    
-        
-        
     #Loop Limit (case insenstive)          
-} until ($selection -contains "X")
+} until ($selection -contains "x") 
 
 
 

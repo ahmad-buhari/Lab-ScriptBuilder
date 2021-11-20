@@ -13,7 +13,7 @@ $CommandMenu =
 `nPress 4 - Create new Top Level OU, e.g new Base name with additional OU for computers and users
 `nPress 5 - Create New Computer(s) 
 `nPress 6 - To compress (zip) file 
-`n
+`nPress 7 - Check IP address 
 "
 
 
@@ -211,6 +211,23 @@ do {
                 else { Write-Host "Canceling" -ForegroundColor Red }
 
 
+
+
+            }
+
+            '7'{
+                $ipdata = Read-Host "Enter first 3 octect Example: 192.168.1`n"
+                Write-Host "Scanning configured for $ipdata `nStart scanning on $ipdata.1"
+                $ipdata2 = 1
+               
+                
+                for ($ipdata2;$ipdata2 -lt 255 ;$ipdata2++)
+                {
+
+                    Test-Connection "$ipdata.$ipdata2" -Count 1 | Select-Object Destination,Ping,Status
+
+                }
+                
             }
         
         }
